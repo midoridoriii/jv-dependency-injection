@@ -17,6 +17,12 @@ public class Injector {
     private Injector() {
     }
 
+    private final Map<Class<?>, Class<?>> interfaceToImpl = Map.of(
+            FileReaderService.class, FileReaderServiceImpl.class,
+            ProductParser.class, ProductParserImpl.class,
+            ProductService.class, ProductServiceImpl.class
+    );
+
     public static Injector getInjector() {
         return injector;
     }
@@ -33,8 +39,9 @@ public class Injector {
         Object implInstance;
         try {
             implInstance = implClass.getDeclaredConstructor().newInstance();
-        } catch (Exception e) {
-            throw new RuntimeException("Can't create instance of " + implClass.getName(), e);
+        } catch (ReflectiveOperationException e) {
+            throw new RuntimeException("Can't create instance of "
+                    + implClass.getName(), e);
         }
         instances.put(interfaceClass, implInstance);
         injectFields(implInstance, implClass);
@@ -58,16 +65,11 @@ public class Injector {
     }
 
     private Class<?> findImplementation(Class<?> interfaceClazz) {
-
-        if (interfaceClazz.equals(FileReaderService.class)) {
-            return FileReaderServiceImpl.class;
+        Class<?> implClass = interfaceToImpl.get(interfaceClazz);
+        if (implClass == null) {
+            throw new RuntimeException("No implementation found for "
+                    + interfaceClazz.getName());
         }
-        if (interfaceClazz.equals(ProductParser.class)) {
-            return ProductParserImpl.class;
-        }
-        if (interfaceClazz.equals(ProductService.class)) {
-            return ProductServiceImpl.class;
-        }
-        throw new RuntimeException("No implementation found for " + interfaceClazz.getName());
+        return implClass;
     }
 }
